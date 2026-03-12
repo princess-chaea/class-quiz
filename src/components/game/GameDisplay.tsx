@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Clock, Zap, Shield, Scissors, Gift, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import confetti from "canvas-confetti";
+import { getChoseong } from "@/lib/utils";
 
 interface GameDisplayProps {
   game: any;
@@ -15,6 +16,7 @@ interface GameDisplayProps {
 
 export function GameDisplay({ game, player, onSubmit, result }: GameDisplayProps) {
   const [answer, setAnswer] = useState("");
+  const [blankAnswers, setBlankAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number>(30);
   const currentQuestion = game.options?.questions[game.current_q_index];
@@ -27,6 +29,7 @@ export function GameDisplay({ game, player, onSubmit, result }: GameDisplayProps
 
   useEffect(() => {
     setAnswer("");
+    setBlankAnswers({});
     setSubmitted(false);
     // Sync timer with new question
     setTimeLeft(currentQuestion?.timeLimit || 20);
@@ -111,28 +114,33 @@ export function GameDisplay({ game, player, onSubmit, result }: GameDisplayProps
         </div>
 
         <h2 className="text-4xl md:text-5xl font-black text-gray-800 mb-10 break-keep leading-tight">
-          {currentQuestion?.q || "문제를 불러오는 중..."}
+          {currentQuestion?.type === "BLANK" 
+            ? "다음 빈칸에 들어갈 알맞은 글자를 넣으세요." 
+            : (currentQuestion?.q || "문제를 불러오는 중...")}
         </h2>
 
         {game.current_hint_stage > 0 && !submitted && timeLeft > 0 && (
           <div className="mb-10 p-6 bg-indigo-50 rounded-[2rem] border-2 border-indigo-100 flex flex-col items-center animate-in slide-in-from-top-2 duration-300 shadow-inner">
             <span className="text-xs font-black text-indigo-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <Zap size={14} className="fill-indigo-400" /> Teacher's Hint
+              <Zap size={14} className="fill-indigo-400" /> Teacher's Hint ({game.current_hint_stage === 1 ? '글자 수' : '초성'})
             </span>
             <div className="flex flex-wrap justify-center gap-3">
-              {currentQuestion?.a.split('').map((char: string, i: number) => (
-                <div 
-                  key={i}
-                  className={cn(
-                    "w-10 h-12 md:w-12 md:h-14 rounded-2xl flex items-center justify-center text-2xl font-black transition-all shadow-sm",
-                    game.current_hint_stage === 2 && i === 0
-                      ? "bg-indigo-600 text-white shadow-indigo-200 scale-110" 
-                      : char === ' ' ? "bg-transparent border-none" : "bg-white text-indigo-200 border-2 border-indigo-100"
-                  )}
-                >
-                  {game.current_hint_stage === 2 && i === 0 ? char : (char === ' ' ? ' ' : '')}
-                </div>
-              ))}
+              {currentQuestion?.a.split('').map((char: string, i: number) => {
+                const displayChar = game.current_hint_stage === 2 ? getChoseong(char) : (char === ' ' ? ' ' : '');
+                return (
+                  <div 
+                    key={i}
+                    className={cn(
+                      "w-10 h-12 md:w-12 md:h-14 rounded-2xl flex items-center justify-center text-2xl font-black transition-all shadow-sm",
+                      game.current_hint_stage === 2 && char !== ' '
+                        ? "bg-indigo-600 text-white shadow-indigo-200 scale-110" 
+                        : char === ' ' ? "bg-transparent border-none" : "bg-white text-indigo-200 border-2 border-indigo-100"
+                    )}
+                  >
+                    {displayChar}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -178,29 +186,55 @@ export function GameDisplay({ game, player, onSubmit, result }: GameDisplayProps
                </div>
             ) : currentQuestion?.type === "BLANK" ? (
                <div className="space-y-6">
-                 <div className="p-8 bg-slate-50 rounded-[2rem] border-2 border-slate-100 flex flex-wrap gap-x-2 gap-y-4 items-center justify-center min-h-[160px]">
-                    {currentQuestion.q.split(/\s+/).filter(Boolean).map((word: string, i: number) => {
-                      const isBlank = (currentQuestion.blanks || []).includes(i);
+                 <div className="p-8 bg-slate-50 rounded-[2rem] border-2 border-slate-100 flex flex-wrap gap-x-2 gap-y-8 items-center justify-center min-h-[160px]">
+                    {currentQuestion.q.split(/\s+/).filter(Boolean).map((word: string, wordIdx: number) => {
+                      const blanks = currentQuestion.blanks || [];
+                      const blankIndex = blanks.indexOf(wordIdx);
+                      const isBlank = blankIndex !== -1;
+                      
                       if (isBlank) {
                         return (
-                          <input
-                            key={i}
-                            type="text"
-                            className="bg-white border-b-4 border-indigo-400 w-24 px-2 py-1 text-center font-bold text-indigo-600 focus:border-indigo-600 outline-none rounded-t-lg"
-                            placeholder="???"
-                            onChange={(e) => {
-                              // Handling multiple blanks: we'll join them by comma for submission
-                              // This is a simplified approach. In a more complex app, we might store an object of blank values.
-                              // Given the editor logic uses comma-separated words for 'a', we'll do the same.
-                              const inputs = document.querySelectorAll(`input[data-blank-index="${game.current_q_index}"]`);
-                              const values = Array.from(inputs).map((input: any) => input.value.trim());
-                              setAnswer(values.filter(Boolean).join(", "));
-                            }}
-                            data-blank-index={game.current_q_index}
-                          />
+                          <div key={wordIdx} className="relative flex gap-1 bg-white p-2 rounded-xl shadow-sm border border-slate-200">
+                            {word.split('').map((char, charIdx) => {
+                              const key = `${wordIdx}-${charIdx}`;
+                              return (
+                                <input
+                                  key={key}
+                                  type="text"
+                                  maxLength={1}
+                                  value={blankAnswers[key as any] || ""}
+                                  className="w-10 h-12 bg-slate-50 border-2 border-indigo-200 rounded-lg text-center font-black text-indigo-600 focus:border-indigo-500 focus:bg-white outline-none transition-all text-xl"
+                                  onChange={(e) => {
+                                    const newVal = e.target.value.slice(-1);
+                                    const newBlankAnswers = { ...blankAnswers, [key]: newVal };
+                                    setBlankAnswers(newBlankAnswers as any);
+                                    
+                                    // Construct the full answer string for submission
+                                    const sortedBlanks = [...blanks].sort((a, b) => a - b);
+                                    const words = currentQuestion.q.split(/\s+/).filter(Boolean);
+                                    const combined = sortedBlanks.map((wIdx: number) => {
+                                      const w = words[wIdx];
+                                      return w.split('').map((_: string, cIdx: number) => newBlankAnswers[`${wIdx}-${cIdx}`] || "").join('');
+                                    }).join(", ");
+                                    setAnswer(combined);
+
+                                    // Auto-focus next input if filled
+                                    if (newVal && e.target.nextElementSibling) {
+                                      (e.target.nextElementSibling as HTMLInputElement).focus();
+                                    }
+                                  }}
+                                />
+                              );
+                            })}
+                            {blanks.length > 1 && (
+                              <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm">
+                                {blankIndex + 1}
+                              </span>
+                            )}
+                          </div>
                         );
                       }
-                      return <span key={i} className="text-2xl font-bold text-slate-400">{word}</span>;
+                      return <span key={wordIdx} className="text-2xl font-black text-slate-400 px-1">{word}</span>;
                     })}
                  </div>
                  <Button 

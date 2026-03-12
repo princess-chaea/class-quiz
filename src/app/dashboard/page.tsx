@@ -41,7 +41,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState({ totalStudents: 0, avgParticipation: 0, totalQuestions: 0 });
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedQuiz, setSelectedQuiz] = useState<any | null>(null);
-  const { showAlert, showConfirm } = useDialog();
+  const { showAlert, showConfirm, showPrompt } = useDialog();
   const [gameOptions, setGameOptions] = useState({
     isTeamMode: false,
     teamCount: 4,
@@ -108,7 +108,7 @@ export default function Dashboard() {
   };
 
   const handleCreateQuiz = async () => {
-    const title = window.prompt("새로운 퀴즈 제목을 입력하세요:", "제목 없는 퀴즈");
+    const title = await showPrompt("새로운 퀴즈 제목을 입력하세요:", "제목 없는 퀴즈");
     if (!title) return;
 
     try {

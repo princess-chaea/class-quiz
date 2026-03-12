@@ -17,6 +17,7 @@ export default function HostPage() {
   const { code } = useParams();
   const router = useRouter();
   const { game, players, loading, refresh } = useGame(code as string);
+  const { showAlert } = useDialog();
   const [starting, setStarting] = useState(false);
   const [copied, setCopied] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -29,11 +30,11 @@ export default function HostPage() {
   
   // Modal states
   const [showQR, setShowQR] = useState(false);
-  const [kickTarget, setKickTarget] = useState<string | null>(null);
+  const [kickTarget, setKickTarget] = useState<any | null>(null);
   const [teamTarget, setTeamTarget] = useState<any | null>(null);
 
   const handleStartGame = async () => {
-    if (players.length === 0) return alert("최소 한 명의 플레이어가 필요합니다.");
+    if (players.length === 0) return showAlert("최소 한 명의 플레이어가 필요합니다.");
     setStarting(true);
     try {
       const { error } = await supabase
@@ -50,7 +51,7 @@ export default function HostPage() {
       // This helps the UI transition immediately
       await refresh();
     } catch (err) {
-      alert("게임 시작 실패: " + (err as Error).message);
+      showAlert("게임 시작 실패: " + (err as Error).message);
     } finally {
       setStarting(false);
     }
@@ -62,13 +63,12 @@ export default function HostPage() {
       const { error } = await supabase
         .from("players")
         .delete()
-        .eq("nickname", kickTarget)
-        .eq("game_id", game?.id);
+        .eq("id", kickTarget.id);
       
       if (error) throw error;
       setKickTarget(null);
     } catch (err) {
-      alert("강퇴 실패: " + (err as Error).message);
+      showAlert("강퇴 실패: " + (err as Error).message);
     }
   };
 
@@ -83,7 +83,7 @@ export default function HostPage() {
       if (error) throw error;
       setTeamTarget(null);
     } catch (err) {
-      alert("팀 변경 실패: " + (err as Error).message);
+      showAlert("팀 변경 실패: " + (err as Error).message);
     }
   };
 
@@ -127,7 +127,7 @@ export default function HostPage() {
       {showQR && <QRCodeModal url={joinUrl} onClose={() => setShowQR(false)} />}
       {kickTarget && (
         <KickConfirmModal 
-          playerName={kickTarget} 
+          playerName={kickTarget.nickname} 
           onConfirm={executeKick} 
           onCancel={() => setKickTarget(null)} 
         />
@@ -217,7 +217,7 @@ export default function HostPage() {
                   key={player.id} 
                   player={player} 
                   isTeamMode={false}
-                  onKick={() => setKickTarget(player.nickname)}
+                  onKick={() => setKickTarget(player)}
                   onChangeTeam={() => setTeamTarget(player)}
                 />
               ))}
@@ -247,7 +247,7 @@ export default function HostPage() {
                           key={player.id} 
                           player={player} 
                           isTeamMode={true}
-                          onKick={() => setKickTarget(player.nickname)}
+                          onKick={() => setKickTarget(player)}
                           onChangeTeam={() => setTeamTarget(player)}
                         />
                       ))}
@@ -273,7 +273,7 @@ export default function HostPage() {
                         key={player.id} 
                         player={player} 
                         isTeamMode={true}
-                        onKick={() => setKickTarget(player.nickname)}
+                        onKick={() => setKickTarget(player)}
                         onChangeTeam={() => setTeamTarget(player)}
                       />
                     ))}

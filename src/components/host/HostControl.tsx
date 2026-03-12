@@ -18,6 +18,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import confetti from "canvas-confetti";
 import { cn } from "@/lib/utils";
+import { useDialog } from "@/components/ui/DialogProvider";
 
 interface HostControlProps {
   game: any;
@@ -28,7 +29,10 @@ export function HostControl({ game, players }: HostControlProps) {
   const [answers, setAnswers] = useState<any[]>([]);
   const [calculating, setCalculating] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number>(30); // Default
+  const { showConfirm, showAlert } = useDialog();
   const currentQuestion = game.options?.questions[game.current_q_index];
+
+  if (game.status === 'ENDED') return null;
 
   // Refs for stale closure protection
   const playersRef = useRef(players);
@@ -41,6 +45,13 @@ export function HostControl({ game, players }: HostControlProps) {
 
   const handleFinishRound = async () => {
     if (calculating) return;
+    
+    // If prematurely ending, ask for confirmation
+    if (timeLeft > 0 && answers.length < players.length) {
+      const confirmed = await showConfirm(`아직 제출하지 않은 학생이 ${players.length - answers.length}명 있습니다.\n정말로 마감하시겠습니까?`);
+      if (!confirmed) return;
+    }
+
     setCalculating(true);
     
     const currentPlayers = playersRef.current;
@@ -225,6 +236,17 @@ export function HostControl({ game, players }: HostControlProps) {
   }, [game.id, game.current_q_index]);
 
   const handleHintStage = async (stage: number) => {
+    if (game.current_hint_stage >= stage) return;
+    
+    const descriptions = [
+      "",
+      "1단계 힌트: 정답의 '글자 수'를 보여줍니다.",
+      "2단계 힌트: 정답의 '초성(ㄱㄴㄷ...)'을 보여줍니다."
+    ];
+
+    const confirmed = await showConfirm(`${descriptions[stage]}\n힌트를 공개하시겠습니까?`);
+    if (!confirmed) return;
+
     try {
       await supabase
         .from("games")
@@ -449,7 +471,7 @@ export function HostControl({ game, players }: HostControlProps) {
         
         <Button 
           size="xl" 
-          disabled={calculating || answers.length === 0}
+          disabled={calculating}
           className="px-12 py-6 bg-indigo-600 hover:bg-indigo-700 font-black shadow-xl"
           onClick={handleFinishRound}
         >

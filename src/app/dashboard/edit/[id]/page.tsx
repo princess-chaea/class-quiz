@@ -65,7 +65,7 @@ export default function QuizEditor() {
   };
 
   const handleAddQuestion = () => {
-    const newQuestion = { q: "", a: "", type: "SHORT_ANSWER", options: ["", ""], blanks: [], points: 10, timeLimit: 20 };
+    const newQuestion = { q: "", a: "", type: "SHORT_ANSWER", options: ["", ""], blanks: [], correct_idx: -1, points: 10, timeLimit: 20 };
     setQuiz({ ...quiz, questions: [...quiz.questions, newQuestion] });
   };
 
@@ -333,7 +333,8 @@ export default function QuizEditor() {
                         <div className="space-y-2">
                           <div className="flex flex-col gap-2">
                             {(q.options || ["", ""]).map((opt: string, optIdx: number) => {
-                              const isCorrect = q.a === opt && opt !== "";
+                              // If correct_idx exists, use it. Otherwise fallback to value match for legacy data.
+                              const isCorrect = q.correct_idx !== undefined ? q.correct_idx === optIdx : (q.a === opt && opt !== "");
                               return (
                                 <div key={optIdx} className={`flex items-center gap-3 p-2 rounded-xl border-2 transition-all ${isCorrect ? 'border-emerald-400 bg-emerald-50' : 'border-slate-100 bg-slate-50'}`}>
                                   <input 
@@ -342,7 +343,8 @@ export default function QuizEditor() {
                                     className="w-4 h-4 accent-emerald-500 cursor-pointer"
                                     checked={isCorrect}
                                     onChange={() => {
-                                      if (opt) updateQuestion(index, "a", opt);
+                                      updateQuestion(index, "a", opt);
+                                      updateQuestion(index, "correct_idx", optIdx);
                                     }}
                                   />
                                   <input 
@@ -353,7 +355,8 @@ export default function QuizEditor() {
                                       const oldVal = newOpts[optIdx];
                                       newOpts[optIdx] = e.target.value;
                                       updateQuestion(index, "options", newOpts);
-                                      if (q.a === oldVal && oldVal !== "") updateQuestion(index, "a", e.target.value);
+                                      // If this was the correct one, update the answer string
+                                      if (isCorrect) updateQuestion(index, "a", e.target.value);
                                     }}
                                     className="flex-1 bg-transparent outline-none font-bold text-slate-700 text-sm placeholder:text-slate-300 placeholder:font-medium"
                                     placeholder={`보기 ${optIdx + 1}`}
@@ -402,34 +405,40 @@ export default function QuizEditor() {
                           ))}
                         </div>
                       ) : q.type === "BLANK" ? (
-                        <div className="space-y-4">
-                          <div className="p-4 bg-slate-50 rounded-2xl border-2 border-slate-100 min-h-[100px] flex flex-wrap gap-2 content-start">
-                            {q.q.split(/\s+/).filter(Boolean).map((word: string, wordIdx: number) => {
-                              const blanks = q.blanks || [];
-                              const isBlank = blanks.includes(wordIdx);
-                              return (
-                                <button
-                                  key={wordIdx}
-                                  onClick={() => {
-                                    const newBlanks = isBlank 
-                                      ? blanks.filter((id: number) => id !== wordIdx)
-                                      : [...blanks, wordIdx].sort((a, b) => a - b);
-                                    updateQuestion(index, "blanks", newBlanks);
-                                    
-                                    const words = q.q.split(/\s+/).filter(Boolean);
-                                    const blankWords = words.filter((_: any, i: number) => newBlanks.includes(i));
-                                    updateQuestion(index, "a", blankWords.join(", "));
-                                  }}
-                                  className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${isBlank ? 'bg-indigo-600 text-white shadow-md scale-105' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
-                                >
-                                  {word}
-                                </button>
-                              );
-                            })}
-                            {(!q.q || q.q.trim().length === 0) && <p className="text-slate-300 text-sm font-medium italic">질문을 먼저 입력해주세요.</p>}
-                          </div>
-                          <p className="text-[10px] text-slate-400 font-bold px-1 mt-1">질문의 단어를 클릭하여 빈칸으로 만드세요. 선택된 단어들이 정답이 됩니다.</p>
-                        </div>
+                         <div className="space-y-4">
+                            <div className="p-4 bg-slate-50 rounded-2xl border-2 border-slate-100 min-h-[100px] flex flex-wrap gap-2 content-start">
+                              {q.q.split(/\s+/).filter(Boolean).map((word: string, wordIdx: number) => {
+                                const blanks = q.blanks || [];
+                                const blankIndex = blanks.indexOf(wordIdx);
+                                const isBlank = blankIndex !== -1;
+                                return (
+                                  <button
+                                    key={wordIdx}
+                                    onClick={() => {
+                                      const newBlanks = isBlank 
+                                        ? blanks.filter((id: number) => id !== wordIdx)
+                                        : [...blanks, wordIdx].sort((a, b) => a - b);
+                                      updateQuestion(index, "blanks", newBlanks);
+                                      
+                                      const words = q.q.split(/\s+/).filter(Boolean);
+                                      const blankWords = words.filter((_: any, i: number) => newBlanks.includes(i));
+                                      updateQuestion(index, "a", blankWords.join(", "));
+                                    }}
+                                    className={`relative px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${isBlank ? 'bg-indigo-600 text-white shadow-md scale-105 pr-8' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+                                  >
+                                    {word}
+                                    {isBlank && (
+                                      <span className="absolute right-1 top-1/2 -translate-y-1/2 w-5 h-5 bg-white/20 rounded-full flex items-center justify-center text-[10px]">
+                                        {blankIndex + 1}
+                                      </span>
+                                    )}
+                                  </button>
+                                );
+                              })}
+                              {(!q.q || q.q.trim().length === 0) && <p className="text-slate-300 text-sm font-medium italic">질문을 먼저 입력해주세요.</p>}
+                            </div>
+                            <p className="text-[10px] text-slate-400 font-bold px-1 mt-1">질문의 단어를 클릭하여 빈칸으로 만드세요. 번호 순서대로 학생이 입력하게 됩니다.</p>
+                         </div>
                       ) : (
                         <input 
                           type="text"

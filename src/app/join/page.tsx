@@ -8,6 +8,7 @@ import { generateQuizCode } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/useAuth";
 import { defaultQuestions } from "@/lib/questions";
+import { useDialog } from "@/components/ui/DialogProvider";
 
 export default function JoinPage() {
   const router = useRouter();
@@ -15,6 +16,7 @@ export default function JoinPage() {
   const [nickname, setNickname] = useState("");
   const [quizCode, setQuizCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const { showAlert } = useDialog();
 
   useEffect(() => {
     // Check for code in URL
@@ -31,7 +33,7 @@ export default function JoinPage() {
   }, []);
 
   const handleJoinGame = async () => {
-    if (!nickname || !quizCode) return alert("이름과 퀴즈 코드를 입력해주세요.");
+    if (!nickname || !quizCode) return showAlert("이름과 퀴즈 코드를 입력해주세요.");
     const cleanNickname = nickname.trim();
     const cleanCode = quizCode.toUpperCase().trim();
 
@@ -90,7 +92,7 @@ export default function JoinPage() {
       
       router.push(`/play/${cleanCode}?name=${cleanNickname}`);
     } catch (err) {
-      alert("입장 실패: " + (err as Error).message);
+      showAlert("입장 실패: " + (err as Error).message);
     } finally {
       setLoading(false);
     }
