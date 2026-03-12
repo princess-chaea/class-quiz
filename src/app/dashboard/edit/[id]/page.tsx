@@ -65,7 +65,7 @@ export default function QuizEditor() {
   };
 
   const handleAddQuestion = () => {
-    const newQuestion = { q: "", a: "", type: "SHORT_ANSWER", options: ["", "", "", ""], points: 10, timeLimit: 20 };
+    const newQuestion = { q: "", a: "", type: "SHORT_ANSWER", options: ["", ""], blanks: [], points: 10, timeLimit: 20 };
     setQuiz({ ...quiz, questions: [...quiz.questions, newQuestion] });
   };
 
@@ -189,7 +189,7 @@ export default function QuizEditor() {
             onClick={() => handleSave(true)}
             disabled={saving}
           >
-            <Save size={18} className="mr-2" /> {saving ? '저장 중...' : '저장하기'}
+            <Save size={18} className="mr-2" /> {saving ? '저장 중...' : '저장 후 나가기'}
           </Button>
         </div>
       </nav>
@@ -226,7 +226,7 @@ export default function QuizEditor() {
                 <div>
                   <label className="text-xs font-black text-gray-400 uppercase tracking-widest block mb-3">학교 급별</label>
                   <div className="flex gap-2">
-                    {['초', '중', '고'].map(level => (
+                    {['초등', '중', '고등'].map(level => (
                       <button
                         key={level}
                         onClick={() => setQuiz({...quiz, school_level: level})}
@@ -277,16 +277,24 @@ export default function QuizEditor() {
                     <span className="bg-indigo-50 text-indigo-600 px-4 py-1.5 rounded-full text-sm font-black">
                       Problem #{index + 1}
                     </span>
-                    <div className="flex gap-2">
-                       <button
-                         onClick={() => updateQuestion(index, "type", "SHORT_ANSWER")}
-                         className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition-all ${q.type !== "MULTIPLE_CHOICE" ? 'bg-slate-100 border-slate-200 text-slate-800' : 'bg-transparent border-transparent text-slate-400 hover:bg-slate-50'}`}
-                       >단답형</button>
-                       <button
-                         onClick={() => updateQuestion(index, "type", "MULTIPLE_CHOICE")}
-                         className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition-all ${q.type === "MULTIPLE_CHOICE" ? 'bg-slate-100 border-slate-200 text-slate-800' : 'bg-transparent border-transparent text-slate-400 hover:bg-slate-50'}`}
-                       >4지선다형</button>
-                    </div>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() => updateQuestion(index, "type", "SHORT_ANSWER")}
+                            className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition-all ${q.type === "SHORT_ANSWER" ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-transparent border-transparent text-slate-400 hover:bg-slate-50'}`}
+                          >단답형</button>
+                          <button
+                            onClick={() => updateQuestion(index, "type", "MULTIPLE_CHOICE")}
+                            className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition-all ${q.type === "MULTIPLE_CHOICE" ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-transparent border-transparent text-slate-400 hover:bg-slate-50'}`}
+                          >선다형</button>
+                          <button
+                            onClick={() => updateQuestion(index, "type", "OX")}
+                            className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition-all ${q.type === "OX" ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-transparent border-transparent text-slate-400 hover:bg-slate-50'}`}
+                          >O/X 퀴즈</button>
+                          <button
+                            onClick={() => updateQuestion(index, "type", "BLANK")}
+                            className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition-all ${q.type === "BLANK" ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-transparent border-transparent text-slate-400 hover:bg-slate-50'}`}
+                          >빈칸 넣기</button>
+                        </div>
                   </div>
                   <button 
                     onClick={() => handleRemoveQuestion(index)}
@@ -313,54 +321,124 @@ export default function QuizEditor() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Answer Section based on type */}
-                    <div className="space-y-2">
-                       <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-1">
-                         <HelpCircle size={14} /> {q.type === "MULTIPLE_CHOICE" ? "Options & Answer" : "Correct Answer"}
-                       </label>
+                    <div className="space-y-4">
+                      <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-1">
+                        <HelpCircle size={14} /> 
+                        {q.type === "MULTIPLE_CHOICE" ? "Options & Answer" : 
+                         q.type === "OX" ? "Select Correct Answer" :
+                         q.type === "BLANK" ? "Set Blanks (Click words below)" : "Correct Answer"}
+                      </label>
                        
-                       {q.type === "MULTIPLE_CHOICE" ? (
-                         <div className="space-y-2">
-                           {Array.from({ length: 4 }).map((_, optIdx) => {
-                             const opts = q.options || ["", "", "", ""];
-                             const isCorrect = q.a && q.a === opts[optIdx];
-                             return (
-                               <div key={optIdx} className={`flex items-center gap-3 p-2 rounded-xl border-2 transition-all ${isCorrect ? 'border-emerald-400 bg-emerald-50' : 'border-slate-100 bg-slate-50'}`}>
-                                 <input 
-                                   type="radio" 
-                                   name={`correct-${index}`}
-                                   className="w-4 h-4 accent-emerald-500 cursor-pointer"
-                                   checked={isCorrect}
-                                   onChange={() => {
-                                      if (opts[optIdx]) updateQuestion(index, "a", opts[optIdx]);
-                                   }}
-                                 />
-                                 <input 
-                                   type="text"
-                                   value={opts[optIdx]}
-                                   onChange={(e) => {
-                                      const newOpts = [...opts];
+                      {q.type === "MULTIPLE_CHOICE" ? (
+                        <div className="space-y-2">
+                          <div className="flex flex-col gap-2">
+                            {(q.options || ["", ""]).map((opt: string, optIdx: number) => {
+                              const isCorrect = q.a === opt && opt !== "";
+                              return (
+                                <div key={optIdx} className={`flex items-center gap-3 p-2 rounded-xl border-2 transition-all ${isCorrect ? 'border-emerald-400 bg-emerald-50' : 'border-slate-100 bg-slate-50'}`}>
+                                  <input 
+                                    type="radio" 
+                                    name={`correct-${index}`}
+                                    className="w-4 h-4 accent-emerald-500 cursor-pointer"
+                                    checked={isCorrect}
+                                    onChange={() => {
+                                      if (opt) updateQuestion(index, "a", opt);
+                                    }}
+                                  />
+                                  <input 
+                                    type="text"
+                                    value={opt}
+                                    onChange={(e) => {
+                                      const newOpts = [...(q.options || ["", ""])];
                                       const oldVal = newOpts[optIdx];
                                       newOpts[optIdx] = e.target.value;
                                       updateQuestion(index, "options", newOpts);
-                                      if (q.a === oldVal) updateQuestion(index, "a", e.target.value);
-                                   }}
-                                   className="flex-1 bg-transparent outline-none font-bold text-slate-700 text-sm placeholder:text-slate-300 placeholder:font-medium"
-                                   placeholder={`보기 ${optIdx + 1}`}
-                                 />
-                               </div>
-                             );
-                           })}
-                           <p className="text-[10px] text-slate-400 font-bold px-1 mt-1">체크박스를 눌러 정답을 지정하세요.</p>
-                         </div>
-                       ) : (
-                         <input 
-                           type="text"
-                           value={q.a}
-                           onChange={(e) => updateQuestion(index, "a", e.target.value)}
-                           className="w-full p-4 font-bold border-2 border-gray-50 bg-gray-50 rounded-2xl focus:border-indigo-400 focus:bg-white outline-none transition-all placeholder:text-gray-300"
-                           placeholder="정답을 입력하세요"
-                         />
-                       )}
+                                      if (q.a === oldVal && oldVal !== "") updateQuestion(index, "a", e.target.value);
+                                    }}
+                                    className="flex-1 bg-transparent outline-none font-bold text-slate-700 text-sm placeholder:text-slate-300 placeholder:font-medium"
+                                    placeholder={`보기 ${optIdx + 1}`}
+                                  />
+                                  {(q.options || []).length > 2 && (
+                                    <button 
+                                      onClick={() => {
+                                        const newOpts = (q.options || []).filter((_: any, i: number) => i !== optIdx);
+                                        updateQuestion(index, "options", newOpts);
+                                        if (q.a === opt) updateQuestion(index, "a", "");
+                                      }}
+                                      className="p-1 text-slate-300 hover:text-red-500"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                          {(q.options || []).length < 4 && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="w-full border-2 border-dashed border-slate-200 text-slate-400 hover:border-indigo-200 hover:text-indigo-400 py-2 rounded-xl"
+                              onClick={() => {
+                                const newOpts = [...(q.options || ["", ""]), ""];
+                                updateQuestion(index, "options", newOpts);
+                              }}
+                            >
+                              <Plus size={14} className="mr-1" /> 보기 추가
+                            </Button>
+                          )}
+                          <p className="text-[10px] text-slate-400 font-bold px-1 mt-1">체크박스를 눌러 정답을 지정하세요.</p>
+                        </div>
+                      ) : q.type === "OX" ? (
+                        <div className="flex gap-4">
+                          {["O", "X"].map(opt => (
+                            <button
+                              key={opt}
+                              onClick={() => updateQuestion(index, "a", opt)}
+                              className={`flex-1 py-4 rounded-2xl border-2 font-black text-2xl transition-all ${q.a === opt ? 'border-emerald-400 bg-emerald-50 text-emerald-600 shadow-sm' : 'border-slate-100 bg-slate-50 text-slate-300 hover:bg-slate-100'}`}
+                            >
+                              {opt}
+                            </button>
+                          ))}
+                        </div>
+                      ) : q.type === "BLANK" ? (
+                        <div className="space-y-4">
+                          <div className="p-4 bg-slate-50 rounded-2xl border-2 border-slate-100 min-h-[100px] flex flex-wrap gap-2 content-start">
+                            {q.q.split(/\s+/).filter(Boolean).map((word: string, wordIdx: number) => {
+                              const blanks = q.blanks || [];
+                              const isBlank = blanks.includes(wordIdx);
+                              return (
+                                <button
+                                  key={wordIdx}
+                                  onClick={() => {
+                                    const newBlanks = isBlank 
+                                      ? blanks.filter((id: number) => id !== wordIdx)
+                                      : [...blanks, wordIdx].sort((a, b) => a - b);
+                                    updateQuestion(index, "blanks", newBlanks);
+                                    
+                                    const words = q.q.split(/\s+/).filter(Boolean);
+                                    const blankWords = words.filter((_: any, i: number) => newBlanks.includes(i));
+                                    updateQuestion(index, "a", blankWords.join(", "));
+                                  }}
+                                  className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${isBlank ? 'bg-indigo-600 text-white shadow-md scale-105' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+                                >
+                                  {word}
+                                </button>
+                              );
+                            })}
+                            {(!q.q || q.q.trim().length === 0) && <p className="text-slate-300 text-sm font-medium italic">질문을 먼저 입력해주세요.</p>}
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-bold px-1 mt-1">질문의 단어를 클릭하여 빈칸으로 만드세요. 선택된 단어들이 정답이 됩니다.</p>
+                        </div>
+                      ) : (
+                        <input 
+                          type="text"
+                          value={q.a}
+                          onChange={(e) => updateQuestion(index, "a", e.target.value)}
+                          className="w-full p-4 font-bold border-2 border-gray-50 bg-gray-50 rounded-2xl focus:border-indigo-400 focus:bg-white outline-none transition-all placeholder:text-gray-300"
+                          placeholder="정답을 입력하세요"
+                        />
+                      )}
                     </div>
 
                     <div className="flex flex-col gap-6">

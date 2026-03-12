@@ -151,19 +151,21 @@ export function AIQuizGenerator({ onQuestionsGenerated, onClose }: AIQuizGenerat
                   <span className="w-5 h-5 bg-indigo-50 text-indigo-600 rounded flex items-center justify-center text-[10px]">2</span>
                   문제 유형 (중복 선택 가능)
                 </label>
-                <div className="flex gap-4">
-                  <button 
-                    onClick={() => toggleType("SHORT_ANSWER")}
-                    className={`flex-1 py-3 rounded-xl border-2 font-bold transition-all ${types.includes("SHORT_ANSWER") ? "border-indigo-600 bg-indigo-50 text-indigo-700" : "border-slate-200 text-slate-500 hover:bg-slate-50"}`}
-                  >
-                    단답형
-                  </button>
-                  <button 
-                    onClick={() => toggleType("MULTIPLE_CHOICE")}
-                    className={`flex-1 py-3 rounded-xl border-2 font-bold transition-all ${types.includes("MULTIPLE_CHOICE") ? "border-indigo-600 bg-indigo-50 text-indigo-700" : "border-slate-200 text-slate-500 hover:bg-slate-50"}`}
-                  >
-                    4지선다형
-                  </button>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[
+                    { id: "SHORT_ANSWER", label: "단답형" },
+                    { id: "MULTIPLE_CHOICE", label: "선다형" },
+                    { id: "OX", label: "O/X 퀴즈" },
+                    { id: "BLANK", label: "빈칸 넣기" }
+                  ].map(type => (
+                    <button
+                      key={type.id}
+                      onClick={() => toggleType(type.id)}
+                      className={`p-3 rounded-xl border-2 font-bold transition-all ${types.includes(type.id) ? 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm' : 'border-gray-100 text-gray-400 hover:bg-gray-50'}`}
+                    >
+                      {type.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 

@@ -157,6 +157,60 @@ export function GameDisplay({ game, player, onSubmit, result }: GameDisplayProps
                    </Button>
                  ))}
                </div>
+            ) : currentQuestion?.type === "OX" ? (
+               <div className="grid grid-cols-2 gap-6">
+                 {["O", "X"].map(opt => (
+                   <button
+                     key={opt}
+                     onClick={() => {
+                        setAnswer(opt);
+                        setSubmitted(true);
+                        onSubmit(opt);
+                     }}
+                     className={cn(
+                       "py-16 rounded-[2.5rem] border-4 font-black text-7xl transition-all shadow-xl",
+                       opt === "O" ? "border-emerald-100 bg-emerald-50 text-emerald-500 hover:bg-emerald-100 hover:border-emerald-200" : "border-red-100 bg-red-50 text-red-500 hover:bg-red-100 hover:border-red-200"
+                     )}
+                   >
+                     {opt}
+                   </button>
+                 ))}
+               </div>
+            ) : currentQuestion?.type === "BLANK" ? (
+               <div className="space-y-6">
+                 <div className="p-8 bg-slate-50 rounded-[2rem] border-2 border-slate-100 flex flex-wrap gap-x-2 gap-y-4 items-center justify-center min-h-[160px]">
+                    {currentQuestion.q.split(/\s+/).filter(Boolean).map((word: string, i: number) => {
+                      const isBlank = (currentQuestion.blanks || []).includes(i);
+                      if (isBlank) {
+                        return (
+                          <input
+                            key={i}
+                            type="text"
+                            className="bg-white border-b-4 border-indigo-400 w-24 px-2 py-1 text-center font-bold text-indigo-600 focus:border-indigo-600 outline-none rounded-t-lg"
+                            placeholder="???"
+                            onChange={(e) => {
+                              // Handling multiple blanks: we'll join them by comma for submission
+                              // This is a simplified approach. In a more complex app, we might store an object of blank values.
+                              // Given the editor logic uses comma-separated words for 'a', we'll do the same.
+                              const inputs = document.querySelectorAll(`input[data-blank-index="${game.current_q_index}"]`);
+                              const values = Array.from(inputs).map((input: any) => input.value.trim());
+                              setAnswer(values.filter(Boolean).join(", "));
+                            }}
+                            data-blank-index={game.current_q_index}
+                          />
+                        );
+                      }
+                      return <span key={i} className="text-2xl font-bold text-slate-400">{word}</span>;
+                    })}
+                 </div>
+                 <Button 
+                    size="xl" 
+                    className="w-full py-8 text-3xl shadow-indigo-200 shadow-lg"
+                    onClick={handleSubmit}
+                  >
+                    제출하기!
+                  </Button>
+               </div>
             ) : (
                <>
                   <input

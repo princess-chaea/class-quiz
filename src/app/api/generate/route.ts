@@ -19,46 +19,26 @@ export async function POST(req: Request) {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-    // Format prompt based on selected types
-    const isMixed = types.includes("SHORT_ANSWER") && types.includes("MULTIPLE_CHOICE");
-    const isOnlyMultipleChoice = types.includes("MULTIPLE_CHOICE") && !types.includes("SHORT_ANSWER");
-    
-    const typeLabel = isMixed 
-      ? "단답형과 4지선다형이 골고루 섞인" 
-      : (isOnlyMultipleChoice ? "4지선다형" : "단답형");
+    const typeLabel = types.map((t: string) => {
+      if (t === "MULTIPLE_CHOICE") return "선다형(2-4개 보기)";
+      if (t === "SHORT_ANSWER") return "단답형";
+      if (t === "OX") return "O/X 퀴즈";
+      if (t === "BLANK") return "빈칸 넣기";
+      return t;
+    }).join(", ");
 
-    const formatPrompt = isMixed
-      ? `
+    const formatPrompt = `
       [
         {
           "q": "질문 내용",
-          "options": ["보기1", "보기2", "보기3", "보기4"], // 4지선다형일 경우 필수. 단답형일 경우 생략
-          "a": "정답", // 4지선다형의 경우 options 배열의 값 중 하나와 정확히 일치해야 함
-          "type": "MULTIPLE_CHOICE 또는 SHORT_ANSWER",
+          "options": ["보기1", "보기2", "보기3", "보기4"], // '선다형'일 경우 필수 (2~4개). 그 외 생략
+          "a": "정답", // '선다형'은 options 중 하나와 일치, 'OX'는 "O" 또는 "X", '단답형'/'빈칸넣기'는 정답 단어
+          "type": "MULTIPLE_CHOICE, SHORT_ANSWER, OX, 또는 BLANK",
+          "blanks": [index1, index2], // '빈칸넣기'일 경우 필수. q를 공백으로 나눴을 때 정답이 될 단어의 인덱스 배열
           "points": 10
         }
       ]
-      `
-      : (isOnlyMultipleChoice ? `
-      [
-        {
-          "q": "질문 내용",
-          "options": ["보기1", "보기2", "보기3", "보기4"],
-          "a": "정답 (options 배열의 값 중 하나와 정확히 일치해야 함)",
-          "type": "MULTIPLE_CHOICE",
-          "points": 10
-        }
-      ]
-      ` : `
-      [
-        {
-          "q": "질문 내용",
-          "a": "정답(단답형)",
-          "type": "SHORT_ANSWER",
-          "points": 10
-        }
-      ]
-      `);
+    `;
 
     const textPrompt = `
       제공된 텍스트나 첨부된 파일을 바탕으로 초등학생들이 즐겁게 풀 수 있는 ${typeLabel} 퀴즈 문항 총 ${count}개를 생성해주세요.
