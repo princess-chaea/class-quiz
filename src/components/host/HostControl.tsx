@@ -205,19 +205,22 @@ export function HostControl({ game, players }: HostControlProps) {
       )
       .subscribe();
 
-    // Fetch existing answers for this round
     const fetchAnswers = async () => {
       const { data } = await supabase
         .from("answers")
         .select("*")
         .eq("game_id", game.id)
         .eq("q_index", game.current_q_index);
-      setAnswers(data || []);
+      if (data) setAnswers(data);
     };
     fetchAnswers();
 
+    // Polling fallback
+    const interval = setInterval(fetchAnswers, 2000);
+
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(interval);
     };
   }, [game.id, game.current_q_index]);
 

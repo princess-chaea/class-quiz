@@ -33,7 +33,7 @@ export function GameDisplay({ game, player, onSubmit, result }: GameDisplayProps
   }, [game.current_q_index]);
 
   useEffect(() => {
-    if (submitted || game.status !== 'PLAYING') return;
+    if (game.status !== 'PLAYING') return;
 
     const timer = setInterval(() => {
       setTimeLeft(prev => {
