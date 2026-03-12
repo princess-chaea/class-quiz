@@ -5,9 +5,9 @@ import { useSearchParams, useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Trophy, Home, Medal, Star, Zap } from "lucide-react";
 import confetti from "canvas-confetti";
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 
-export default function StudentResults() {
+function ResultsContent() {
   const { code } = useParams();
   const searchParams = useSearchParams();
   const name = searchParams.get("name") || "";
@@ -17,11 +17,10 @@ export default function StudentResults() {
 
   useEffect(() => {
     if (!loading && players.length > 0) {
-      const me = players.find(p => p.nickname === name);
       const sorted = [...players].sort((a, b) => b.score - a.score);
       const myRank = sorted.findIndex(p => p.nickname === name) + 1;
 
-      if (myRank <= 3) {
+      if (myRank <= 3 && myRank > 0) {
         confetti({
           particleCount: 150,
           spread: 70,
@@ -35,7 +34,7 @@ export default function StudentResults() {
   if (loading) return <div className="min-h-screen flex items-center justify-center font-bold">결과 집계 중...</div>;
 
   const me = players.find(p => p.nickname === name);
-  if (!me) return <div className="min-h-screen flex items-center justify-center font-bold">정보를 찾을 수 없습니다.</div>;
+  if (!me) return <div className="min-h-screen flex items-center justify-center font-bold">참여 정보를 확인할 수 없습니다.</div>;
 
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
   const myRank = sortedPlayers.findIndex(p => p.nickname === name) + 1;
@@ -55,7 +54,7 @@ export default function StudentResults() {
 
           <div className="p-10 space-y-8">
             <div className="flex flex-col items-center">
-              <div className="text-sm font-black text-gray-400 uppercase tracking-widest mb-2">My Score</div>
+              <div className="text-sm font-black text-gray-400 uppercase tracking-widest mb-2">현재 내 점수</div>
               <div className="text-7xl font-black text-indigo-600 drop-shadow-sm">{me.score}점</div>
             </div>
 
@@ -65,8 +64,8 @@ export default function StudentResults() {
                   <Medal size={32} />
                 </div>
                 <div>
-                   <div className="text-xs font-black text-gray-400 uppercase">My Rank</div>
-                   <div className="text-2xl font-black text-gray-800">{myRank}위 / {players.length}명</div>
+                   <div className="text-xs font-black text-gray-400 uppercase">최종 순위</div>
+                   <div className="text-2xl font-black text-gray-800">{myRank === 0 ? '-' : myRank}위 / {players.length}명</div>
                 </div>
               </div>
               {myRank === 1 && (
@@ -97,5 +96,13 @@ export default function StudentResults() {
         © 2026 Class Quiz Jam • 실시간 퀴즈 앱
       </div>
     </div>
+  );
+}
+
+export default function StudentResults() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center font-bold font-jua text-indigo-600 text-2xl">페이지를 준비 중입니다...</div>}>
+      <ResultsContent />
+    </Suspense>
   );
 }

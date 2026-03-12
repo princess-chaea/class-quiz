@@ -74,10 +74,10 @@ export function HostControl({ game, players }: HostControlProps) {
           if (player.buffs?.includes('STRIKE')) points *= 2;
           
           const rand = Math.random();
-          if (game.options?.double && rand < 0.15) { points *= 2; event = 'double'; }
-          else if (game.options?.swap && rand < 0.30) { event = 'swap'; }
-          else if (game.options?.strike && rand < 0.45) { event = 'strike'; }
-          else if (game.options?.shield && rand < 0.60) { event = 'shield'; }
+          if (game.options?.double && rand < 0.05) { points *= 2; event = 'double'; }
+          else if (game.options?.swap && rand < 0.10) { event = 'swap'; }
+          else if (game.options?.strike && rand < 0.15) { event = 'strike'; }
+          else if (game.options?.shield && rand < 0.20) { event = 'shield'; }
         } else {
           const rand = Math.random();
           if (game.options?.cut && rand < 0.20) event = 'cut';
@@ -370,6 +370,12 @@ export function HostControl({ game, players }: HostControlProps) {
           <div className="inline-flex items-center gap-2 bg-indigo-100 text-indigo-700 px-6 py-2 rounded-full font-black text-xl mb-6">
             <HelpCircle size={24} /> Question #{game.current_q_index + 1}
           </div>
+          <div className="flex flex-col items-center gap-1 mb-8">
+             <span className="text-xs font-black text-emerald-500 uppercase tracking-widest">Points</span>
+             <span className="bg-emerald-500 text-white px-6 py-1 rounded-2xl text-2xl font-black shadow-lg shadow-emerald-100 italic">
+               {currentQuestion?.points || 10}점
+             </span>
+          </div>
           <h1 className="text-6xl md:text-8xl font-black text-gray-800 break-keep leading-tight mb-8">
             {currentQuestion?.q}
           </h1>
@@ -400,10 +406,7 @@ export function HostControl({ game, players }: HostControlProps) {
                  "flex items-center gap-3 transition-all duration-300",
                  timeLeft <= 5 && "text-red-500 animate-pulse scale-110"
                )}>
-                 <div className={cn(
-                   "w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner transition-colors",
-                   timeLeft <= 5 ? "bg-red-100" : "bg-indigo-100"
-                 )}>
+                 <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner transition-colors bg-indigo-100">
                    <Clock size={28} />
                  </div>
                  {timeLeft}s
@@ -426,29 +429,31 @@ export function HostControl({ game, players }: HostControlProps) {
         <div className="max-w-6xl mx-auto">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-2xl font-jua text-gray-700">제출 현황 ({answers.length}/{players.length})</h3>
-            <div className="flex gap-2">
-              <div className="flex items-center gap-1 text-sm font-bold text-green-600">
-                <CheckCircle2 size={16} /> 제출됨
+            <div className="flex gap-4">
+              <div className="flex items-center gap-1.5 text-sm font-black text-green-600 bg-green-50 px-3 py-1 rounded-full border border-green-100">
+                <CheckCircle2 size={16} /> 제출 완료
               </div>
-              <div className="flex items-center gap-1 text-sm font-bold text-gray-400">
+              <div className="flex items-center gap-1.5 text-sm font-black text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
                 <AlertCircle size={16} /> 대기 중
               </div>
             </div>
           </div>
           
-          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4 pb-40">
             {players.map(player => {
               const hasSubmitted = answers.some(a => a.player_id === player.id);
               return (
                 <div 
                   key={player.id}
-                  className={`p-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-2 ${
-                    hasSubmitted ? 'bg-green-50 border-green-200 text-green-700 shadow-md' : 'bg-white border-gray-100 text-gray-300'
-                  }`}
+                  className={cn(
+                    "p-4 rounded-2xl border-2 transition-all flex flex-col items-center justify-center gap-2",
+                    hasSubmitted ? 'bg-green-50 border-green-200 text-green-700 shadow-md scale-105' : 'bg-white border-gray-100 text-gray-300'
+                  )}
                 >
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black ${
+                  <div className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center font-black",
                     hasSubmitted ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-300'
-                  }`}>
+                  )}>
                     {player.nickname[0]}
                   </div>
                   <span className="text-xs font-bold truncate w-full text-center">{player.nickname}</span>
@@ -459,33 +464,39 @@ export function HostControl({ game, players }: HostControlProps) {
         </div>
       </div>
 
-      {/* Footer Controls */}
-      <div className="bg-white border-t p-6 shadow-2xl flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          <div className="bg-indigo-100 text-indigo-700 p-4 rounded-2xl">
-            <Users size={32} />
+      {/* Fixed Footer Container */}
+      <div className="fixed bottom-0 left-0 right-0 z-[100] flex flex-col pointer-events-none">
+        {/* Main Footer Controls */}
+        <div className="bg-white/95 backdrop-blur-md border-t-2 border-indigo-100 p-4 md:p-6 shadow-[0_-10px_30px_rgba(0,0,0,0.1)] flex justify-between items-center pointer-events-auto">
+          <div className="flex items-center gap-4">
+            <div className="bg-indigo-100 text-indigo-700 p-3 md:p-4 rounded-2xl">
+              <Users size={32} />
+            </div>
+            <div className="hidden sm:block">
+              <div className="text-2xl font-black">{answers.length}명 제출</div>
+              <div className="text-sm font-bold text-gray-400">남은 학생: {players.length - answers.length}명</div>
+            </div>
           </div>
-          <div>
-            <div className="text-2xl font-black">{answers.length}명 제출</div>
-            <div className="text-sm font-bold text-gray-400">남은 학생: {players.length - answers.length}명</div>
-          </div>
+          
+          <Button 
+            size="xl" 
+            disabled={calculating}
+            className="px-8 md:px-16 py-6 md:py-8 bg-indigo-600 hover:bg-indigo-700 font-black shadow-xl rounded-2xl text-xl md:text-2xl transition-transform active:scale-95"
+            onClick={handleFinishRound}
+          >
+            {calculating ? "채점 중..." : "문제 마감하기"}
+          </Button>
+
+          <div className="w-[100px] hidden md:block"></div> {/* Balanced spacing */}
         </div>
-        
-        <Button 
-          size="xl" 
-          disabled={calculating}
-          className="px-12 py-6 bg-indigo-600 hover:bg-indigo-700 font-black shadow-xl"
-          onClick={handleFinishRound}
-        >
-          {calculating ? "채점 중..." : "문제 마감하기"}
-        </Button>
+
+        {/* Player Status Bar */}
+        <PlayerBar 
+          players={players} 
+          submissions={answers.map(a => a.player_id)}
+          className="bg-indigo-50/90 border-t border-indigo-200 pointer-events-auto"
+        />
       </div>
-      {/* Footer Player Bar */}
-      <PlayerBar 
-        players={players} 
-        submissions={answers.map(a => a.player_id)}
-        className="fixed bottom-[100px] left-0 right-0 z-50 border-y-2 border-indigo-200"
-      />
     </div>
   );
 }

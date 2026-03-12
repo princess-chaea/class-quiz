@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { Clock, Zap, Shield, Scissors, Gift, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,7 @@ export function GameDisplay({ game, player, onSubmit, result }: GameDisplayProps
   const [blankAnswers, setBlankAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number>(30);
+  const isComposing = useRef(false);
   const currentQuestion = game.options?.questions[game.current_q_index];
 
   const handleSubmit = () => {
@@ -73,6 +74,7 @@ export function GameDisplay({ game, player, onSubmit, result }: GameDisplayProps
            {result.event === 'strike' && <div className="bg-blue-500 text-white px-3 py-1 rounded-bl-xl font-bold flex items-center gap-1 shadow-md animate-pulse"><Zap size={16}/> STRIKE!</div>}
            {result.event === 'shield' && <div className="bg-cyan-500 text-white px-3 py-1 rounded-bl-xl font-bold flex items-center gap-1 shadow-md animate-pulse"><Shield size={16}/> 방어권!</div>}
            {result.event === 'swap' && <div className="bg-indigo-500 text-white px-3 py-1 rounded-bl-xl font-bold flex items-center gap-1 shadow-md animate-pulse"><RefreshCw size={16}/> 점수 바꾸기!</div>}
+           {result.event === 'gift' && <div className="bg-pink-500 text-white px-3 py-1 rounded-bl-xl font-bold flex items-center gap-1 shadow-md animate-pulse"><Gift size={16}/> 보너스 선물!</div>}
         </div>
 
         <div className="text-9xl mb-6">{result.is_correct ? "⭕" : "❌"}</div>
@@ -100,7 +102,14 @@ export function GameDisplay({ game, player, onSubmit, result }: GameDisplayProps
                #{game.current_q_index + 1}
              </span>
           </div>
-          
+
+          <div className="flex flex-col items-center gap-1">
+             <span className="text-xs font-black text-emerald-400 uppercase tracking-widest">Points</span>
+             <span className="bg-emerald-500 text-white px-4 py-1 rounded-2xl text-xl font-black shadow-lg shadow-emerald-100">
+               {currentQuestion?.points || 10}점
+             </span>
+          </div>
+         
           <div className={cn(
             "flex flex-col items-end gap-1 transition-all duration-300",
             timeLeft <= 5 ? "text-red-500 scale-110" : "text-gray-400"
@@ -214,6 +223,22 @@ export function GameDisplay({ game, player, onSubmit, result }: GameDisplayProps
                                       }
                                     }
                                   }}
+                                  onCompositionStart={() => { isComposing.current = true; }}
+                                  onCompositionEnd={(e) => {
+                                    isComposing.current = false;
+                                    // After composition ends, we might need to trigger the move if it's a full syllable
+                                    const char = (e.target as HTMLInputElement).value.slice(-1);
+                                    const isSyllable = char.charCodeAt(0) >= 0xAC00 && char.charCodeAt(0) <= 0xD7A3;
+                                    if (isSyllable) {
+                                      setTimeout(() => {
+                                        const inputs = Array.from(document.querySelectorAll('input[data-key]')) as HTMLInputElement[];
+                                        const currentIdx = inputs.findIndex(i => i.getAttribute('data-key') === key);
+                                        if (currentIdx < inputs.length - 1) {
+                                          inputs[currentIdx + 1].focus();
+                                        }
+                                      }, 50);
+                                    }
+                                  }}
                                   onChange={(e) => {
                                     const val = e.target.value;
                                     // Handle empty
@@ -229,7 +254,7 @@ export function GameDisplay({ game, player, onSubmit, result }: GameDisplayProps
                                     setBlankAnswers(newBlankAnswers);
                                     
                                     // Construct the full answer string
-                                    const sortedBlanks = [...blanks].sort((a, b) => a - b);
+                                    const sortedBlanks = [...(currentQuestion.blanks || [])].sort((a, b) => a - b);
                                     const words = currentQuestion.q.split(/\s+/).filter(Boolean);
                                     const combined = sortedBlanks.map((wIdx: number) => {
                                       const w = words[wIdx];
@@ -237,17 +262,15 @@ export function GameDisplay({ game, player, onSubmit, result }: GameDisplayProps
                                     }).join(", ");
                                     setAnswer(combined);
 
-                                    // Smart focus: Only move if it's a complete character or non-composing
-                                    // A simple heuristic for Hangul: if char >= 0xAC00 it's a syllable
-                                    const isSyllable = char.charCodeAt(0) >= 0xAC00 && char.charCodeAt(0) <= 0xD7A3;
-                                    if (isSyllable || !/^[ㄱ-ㅎㅏ-ㅣ]$/.test(char)) {
+                                    // Smart focus: Only move if it's NOT composing and is non-Korean or auto-move is handled by onCompositionEnd
+                                    if (!isComposing.current && !/^[ㄱ-ㅎㅏ-ㅣ가-힣]$/.test(char)) {
                                       setTimeout(() => {
                                         const inputs = Array.from(document.querySelectorAll('input[data-key]')) as HTMLInputElement[];
                                         const currentIdx = inputs.findIndex(i => i.getAttribute('data-key') === key);
                                         if (currentIdx < inputs.length - 1) {
                                           inputs[currentIdx + 1].focus();
                                         }
-                                      }, 50); // Slightly longer delay for IME finish
+                                      }, 50);
                                     }
                                   }}
                                 />

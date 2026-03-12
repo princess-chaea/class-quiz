@@ -50,10 +50,7 @@ export function PlayerBar({ players, currentNickname, submissions, className }: 
             </div>
 
             <div className="flex flex-col min-w-0">
-              <div className="flex items-center gap-1">
-                <span className="text-xs font-black truncate max-w-[60px]">{player.nickname}</span>
-                <span className="text-[10px] opacity-70 font-bold">#{idx + 1}</span>
-              </div>
+              <span className="text-xs font-black truncate max-w-[80px]">{player.nickname}</span>
               <div className="flex items-center gap-1">
                 <span className="text-[11px] font-black">{player.score.toLocaleString()}</span>
                 <div className="flex gap-0.5">
