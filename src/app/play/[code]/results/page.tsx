@@ -85,9 +85,9 @@ export default function StudentResults() {
               variant="primary" 
               size="xl" 
               className="w-full py-6 rounded-2xl text-xl font-black shadow-xl"
-              onClick={() => router.push("/")}
+              onClick={() => router.push("/join")}
             >
-              홈으로 돌아가기
+              다시 참여하기
             </Button>
           </div>
         </div>

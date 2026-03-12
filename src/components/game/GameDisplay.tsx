@@ -200,16 +200,35 @@ export function GameDisplay({ game, player, onSubmit, result }: GameDisplayProps
                               return (
                                 <input
                                   key={key}
+                                  data-key={key}
                                   type="text"
-                                  maxLength={1}
-                                  value={blankAnswers[key as any] || ""}
+                                  value={blankAnswers[key] || ""}
                                   className="w-10 h-12 bg-slate-50 border-2 border-indigo-200 rounded-lg text-center font-black text-indigo-600 focus:border-indigo-500 focus:bg-white outline-none transition-all text-xl"
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Backspace" && !blankAnswers[key]) {
+                                      // Find previous input
+                                      const inputs = Array.from(document.querySelectorAll('input[data-key]')) as HTMLInputElement[];
+                                      const currentIdx = inputs.findIndex(i => i.getAttribute('data-key') === key);
+                                      if (currentIdx > 0) {
+                                        inputs[currentIdx - 1].focus();
+                                      }
+                                    }
+                                  }}
                                   onChange={(e) => {
-                                    const newVal = e.target.value.slice(-1);
-                                    const newBlankAnswers = { ...blankAnswers, [key]: newVal };
-                                    setBlankAnswers(newBlankAnswers as any);
+                                    const val = e.target.value;
+                                    // Handle empty
+                                    if (!val) {
+                                      setBlankAnswers({ ...blankAnswers, [key]: "" });
+                                      return;
+                                    }
+
+                                    // Get only the last character 
+                                    const char = val.slice(-1); 
                                     
-                                    // Construct the full answer string for submission
+                                    const newBlankAnswers = { ...blankAnswers, [key]: char };
+                                    setBlankAnswers(newBlankAnswers);
+                                    
+                                    // Construct the full answer string
                                     const sortedBlanks = [...blanks].sort((a, b) => a - b);
                                     const words = currentQuestion.q.split(/\s+/).filter(Boolean);
                                     const combined = sortedBlanks.map((wIdx: number) => {
@@ -218,9 +237,17 @@ export function GameDisplay({ game, player, onSubmit, result }: GameDisplayProps
                                     }).join(", ");
                                     setAnswer(combined);
 
-                                    // Auto-focus next input if filled
-                                    if (newVal && e.target.nextElementSibling) {
-                                      (e.target.nextElementSibling as HTMLInputElement).focus();
+                                    // Smart focus: Only move if it's a complete character or non-composing
+                                    // A simple heuristic for Hangul: if char >= 0xAC00 it's a syllable
+                                    const isSyllable = char.charCodeAt(0) >= 0xAC00 && char.charCodeAt(0) <= 0xD7A3;
+                                    if (isSyllable || !/^[ㄱ-ㅎㅏ-ㅣ]$/.test(char)) {
+                                      setTimeout(() => {
+                                        const inputs = Array.from(document.querySelectorAll('input[data-key]')) as HTMLInputElement[];
+                                        const currentIdx = inputs.findIndex(i => i.getAttribute('data-key') === key);
+                                        if (currentIdx < inputs.length - 1) {
+                                          inputs[currentIdx + 1].focus();
+                                        }
+                                      }, 50); // Slightly longer delay for IME finish
                                     }
                                   }}
                                 />

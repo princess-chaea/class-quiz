@@ -8,6 +8,8 @@ import { supabase } from "@/lib/supabase";
 import { GameDisplay } from "@/components/game/GameDisplay";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
+import { PlayerBar } from "@/components/game/PlayerBar";
+import { useDialog } from "@/components/ui/DialogProvider";
 
 export default function StudentWaitingRoom() {
   const { code } = useParams();
@@ -16,14 +18,39 @@ export default function StudentWaitingRoom() {
   const router = useRouter();
   
   const { game, players, loading, error } = useGame(code as string);
+  const { showAlert } = useDialog();
   const [playerResult, setPlayerResult] = useState<any>(null);
-
+  const [wasKicked, setWasKicked] = useState(false);
+  const [hasFoundMe, setHasFoundMe] = useState(false);
   // Fetch result when game status changes to RESULT
   useEffect(() => {
     if (game?.status === 'ENDED') {
       router.push(`/play/${code}/results?name=${name}`);
     }
   }, [game?.status, code, name, router]);
+
+  // Check if kicked
+  useEffect(() => {
+    if (!loading && name) {
+      const meExists = players.some(p => p.nickname === name);
+      if (meExists) {
+        setHasFoundMe(true);
+      } else if (hasFoundMe) {
+        // I was here, but now I'm gone -> Kicked
+        setWasKicked(true);
+      }
+    }
+  }, [players, name, loading, hasFoundMe]);
+
+  if (wasKicked) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-red-50 p-6 text-center">
+        <h2 className="text-3xl font-jua text-red-600 mb-4">방장에서 강퇴되었습니다!</h2>
+        <p className="text-gray-500 mb-8 font-bold text-lg">메인 화면으로 이동합니다.</p>
+        <Button size="xl" onClick={() => router.push("/")}>메인으로 가기</Button>
+      </div>
+    );
+  }
 
   useEffect(() => {
     if (game?.status === 'RESULT' && players.length > 0) {
@@ -81,7 +108,7 @@ export default function StudentWaitingRoom() {
 
       if (error) throw error;
     } catch (err) {
-      alert("정답 제출 실패: " + (err as Error).message);
+      showAlert("정답 제출 실패: " + (err as Error).message);
     }
   };
 
@@ -101,6 +128,12 @@ export default function StudentWaitingRoom() {
           onSubmit={handleSubmitAnswer} 
           result={playerResult}
         />
+        <PlayerBar 
+          players={players} 
+          currentNickname={name}
+          className="fixed bottom-0 left-0 right-0 z-50 border-t-2 border-indigo-200 shadow-2xl"
+        />
+        <div className="h-16" /> {/* Spacer for PlayerBar */}
       </div>
     );
   }
@@ -159,22 +192,11 @@ export default function StudentWaitingRoom() {
       </main>
 
       {/* Real-time status bar */}
-      <footer className="bg-white border-t p-4 overflow-x-auto whitespace-nowrap scrollbar-hide flex items-center justify-center gap-3">
-        {players.map(p => (
-          <div 
-            key={p.id} 
-            className={cn(
-              "inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all",
-              p.nickname === name ? "bg-indigo-100 border-indigo-300 ring-2 ring-indigo-200" : "bg-gray-50 border-gray-200 opacity-60"
-            )}
-          >
-            <div className="w-5 h-5 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-[10px]">
-              {p.nickname[0]}
-            </div>
-            <span className="text-xs font-bold">{p.nickname}</span>
-          </div>
-        ))}
-      </footer>
+      <PlayerBar 
+        players={players} 
+        currentNickname={name}
+        className="border-t-2 border-indigo-100"
+      />
     </div>
   );
 }

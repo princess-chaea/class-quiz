@@ -1,0 +1,70 @@
+"use client";
+
+import React from "react";
+import { cn } from "@/lib/utils";
+import { Zap, Shield, CheckCircle2 } from "lucide-react";
+
+interface PlayerBarProps {
+  players: any[];
+  currentNickname?: string;
+  submissions?: string[]; // IDs of players who submitted
+  className?: string;
+}
+
+export function PlayerBar({ players, currentNickname, submissions, className }: PlayerBarProps) {
+  // Sort players by score descending
+  const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+
+  return (
+    <div className={cn("w-full bg-white/80 backdrop-blur-md border-t border-indigo-100 p-2 flex gap-3 overflow-x-auto scrollbar-hide shrink-0", className)}>
+      {sortedPlayers.map((player, idx) => {
+        const isMe = player.nickname === currentNickname;
+        const hasSubmitted = submissions?.includes(player.id);
+        const hasStrike = player.buffs?.includes('STRIKE');
+        const hasShield = player.buffs?.includes('SHIELD');
+
+        return (
+          <div 
+            key={player.id}
+            className={cn(
+              "flex items-center gap-2 px-3 py-1.5 rounded-2xl border transition-all shrink-0 min-w-[120px]",
+              isMe ? "bg-indigo-600 text-white border-indigo-400 shadow-lg shadow-indigo-200 ring-2 ring-indigo-300 ring-offset-1" : "bg-white border-gray-100 text-gray-700 shadow-sm"
+            )}
+          >
+            <div className="relative">
+              <div className={cn(
+                "w-8 h-8 rounded-full flex items-center justify-center font-black text-xs relative",
+                isMe ? "bg-white text-indigo-600" : "bg-indigo-50 text-indigo-600",
+                player.team === 'RED' && !isMe ? 'bg-red-500 text-white' :
+                player.team === 'BLUE' && !isMe ? 'bg-blue-500 text-white' :
+                player.team === 'GREEN' && !isMe ? 'bg-green-500 text-white' :
+                player.team === 'YELLOW' && !isMe ? 'bg-yellow-400 text-white' : ''
+              )}>
+                {player.nickname[0]}
+                {hasSubmitted && (
+                  <div className="absolute -top-1 -right-1 bg-green-500 text-white rounded-full p-0.5 border-2 border-white">
+                    <CheckCircle2 size={10} />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col min-w-0">
+              <div className="flex items-center gap-1">
+                <span className="text-xs font-black truncate max-w-[60px]">{player.nickname}</span>
+                <span className="text-[10px] opacity-70 font-bold">#{idx + 1}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-[11px] font-black">{player.score.toLocaleString()}</span>
+                <div className="flex gap-0.5">
+                  {hasStrike && <Zap size={10} className="text-yellow-400 fill-yellow-400" />}
+                  {hasShield && <Shield size={10} className="text-blue-400 fill-blue-400" />}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}

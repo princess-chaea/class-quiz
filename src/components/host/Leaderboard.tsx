@@ -107,21 +107,13 @@ export function Leaderboard({ players }: LeaderboardProps) {
         )}
 
         {/* Footer Actions */}
-        <div className="flex justify-center gap-6">
+        <div className="flex justify-center">
            <Button 
              size="xl" 
-             variant="ghost" 
-             className="text-white border-white/20 hover:bg-white/10"
+             className="px-16 py-8 bg-white text-indigo-900 hover:bg-gray-100 font-black shadow-2xl rounded-3xl text-2xl"
              onClick={() => router.push("/dashboard")}
            >
-             <Home className="mr-2" /> 대시보드로
-           </Button>
-           <Button 
-             size="xl" 
-             className="px-12 bg-white text-indigo-900 hover:bg-gray-100 font-black shadow-xl"
-             onClick={() => window.location.reload()}
-           >
-             한 게임 더!
+             <Home className="mr-2" size={28} /> 대시보드로 돌아가기
            </Button>
         </div>
       </div>

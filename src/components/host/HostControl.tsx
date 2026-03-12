@@ -19,6 +19,7 @@ import { supabase } from "@/lib/supabase";
 import confetti from "canvas-confetti";
 import { cn } from "@/lib/utils";
 import { useDialog } from "@/components/ui/DialogProvider";
+import { PlayerBar } from "@/components/game/PlayerBar";
 
 interface HostControlProps {
   game: any;
@@ -284,6 +285,7 @@ export function HostControl({ game, players }: HostControlProps) {
     }
   };
 
+
   if (game.status === 'RESULT') {
     return (
       <div className="flex-1 flex flex-col items-center p-8 bg-indigo-900 text-white overflow-y-auto">
@@ -478,6 +480,12 @@ export function HostControl({ game, players }: HostControlProps) {
           {calculating ? "채점 중..." : "문제 마감하기"}
         </Button>
       </div>
+      {/* Footer Player Bar */}
+      <PlayerBar 
+        players={players} 
+        submissions={answers.map(a => a.player_id)}
+        className="fixed bottom-[100px] left-0 right-0 z-50 border-y-2 border-indigo-200"
+      />
     </div>
   );
 }
