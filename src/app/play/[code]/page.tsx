@@ -28,7 +28,7 @@ export default function StudentWaitingRoom() {
   useEffect(() => {
     if (game?.status === 'RESULT' && players.length > 0) {
       const me = players.find(p => p.nickname === name);
-      if (me) {
+      if (me && !playerResult) { // Fetch only if we don't have result for this round
         const fetchResult = async () => {
           const { data } = await supabase
             .from("answers")
@@ -36,15 +36,16 @@ export default function StudentWaitingRoom() {
             .eq("game_id", game.id)
             .eq("player_id", me.id)
             .eq("q_index", game.current_q_index)
-            .single();
-          setPlayerResult(data);
+            .maybeSingle(); // Use maybeSingle to avoid 406 errors
+          
+          if (data) setPlayerResult(data);
         };
         fetchResult();
       }
     } else if (game?.status === 'PLAYING') {
       setPlayerResult(null);
     }
-  }, [game?.status, game?.current_q_index, players, name]);
+  }, [game?.status, game?.current_q_index, players, name, !!playerResult]);
 
   if (loading) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-yellow-50">
