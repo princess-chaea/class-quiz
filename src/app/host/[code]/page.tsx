@@ -12,6 +12,7 @@ import { HostControl } from "@/components/host/HostControl";
 import { Leaderboard } from "@/components/host/Leaderboard";
 import { QRCodeModal } from "@/components/host/QRCodeModal";
 import { KickConfirmModal, ChangeTeamModal } from "@/components/host/LobbyModals";
+import { useDialog } from "@/components/ui/DialogProvider";
 
 export default function HostPage() {
   const { code } = useParams();
