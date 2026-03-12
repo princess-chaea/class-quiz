@@ -73,7 +73,6 @@ export default function HostPage() {
       showAlert("강퇴 실패: " + (err as Error).message);
     }
   };
- Broadway
 
   const executeChangeTeam = async (team: 'RED' | 'BLUE' | 'GREEN' | 'YELLOW') => {
     if (!teamTarget) return;
